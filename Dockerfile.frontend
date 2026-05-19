@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install a simple HTTP server
+RUN pip install --no-cache-dir flask flask-cors
+
+# Create a simple Flask server to serve static files
+RUN printf 'from flask import Flask, send_from_directory\n\
+from flask_cors import CORS\n\
+\n\
+app = Flask(__name__)\n\
+CORS(app)\n\
+\n\
+@app.route("/")\n\
+def index():\n\
+    return send_from_directory("static", "index.html")\n\
+\n\
+@app.route("/<path:path>")\n\
+def static_files(path):\n\
+    return send_from_directory("static", path)\n\
+\n\
+if __name__ == "__main__":\n\
+    app.run(host="0.0.0.0", port=3000)\n' > server.py
+
+# Copy frontend files
+COPY frontend/ ./static/
+
+EXPOSE 3000
+
+CMD ["python", "server.py"]

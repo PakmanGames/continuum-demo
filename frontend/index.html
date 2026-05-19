@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Service Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Multi-Service Demo Application</h1>
+            <p>Frontend → Backend → PostgreSQL Database</p>
+        </header>
+
+        <div class="status-section">
+            <h2>System Status</h2>
+            <div class="status-card">
+                <span class="status-label">Backend:</span>
+                <span id="backend-status" class="status-indicator">Checking...</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Users</h2>
+            <div id="users-container" class="users-grid">
+                <p>Loading users...</p>
+            </div>
+            
+            <div class="add-user-form">
+                <h3>Add New User</h3>
+                <input type="text" id="user-name" placeholder="Name" />
+                <input type="email" id="user-email" placeholder="Email" />
+                <button onclick="addUser()">Add User</button>
+            </div>
+        </div>
+
+        <div class="danger-section">
+            <h2>⚠️ Danger Zone - Test Endpoints</h2>
+            <p class="warning-text">These endpoints contain intentional bugs that will crash the backend!</p>
+            
+            <div class="danger-buttons">
+                <div class="danger-card">
+                    <h3>Division by Zero Crash</h3>
+                    <p>Sends a request to /crash endpoint with value=0, causing a division by zero error.</p>
+                    <button class="danger-btn" onclick="triggerCrash()">💥 Trigger Crash</button>
+                </div>
+                
+                <div class="danger-card">
+                    <h3>Safe Calculation</h3>
+                    <p>Sends a request with a valid value that won't crash.</p>
+                    <button class="safe-btn" onclick="safeCalculation()">✅ Safe Request</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Response Log</h2>
+            <div id="response-log" class="log-container">
+                <p class="log-entry">No requests yet...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
