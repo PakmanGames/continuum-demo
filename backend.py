@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
 import psycopg2
 import os
+import sys
 import time
+import traceback
 
 app = Flask(__name__)
 
@@ -103,16 +105,29 @@ def get_user(user_id):
 @app.route('/crash')
 def crash_endpoint():
     """
-    INTENTIONAL BUG: This endpoint has a division by zero error
-    that will crash the backend when accessed.
+    INTENTIONAL BUG: divides by the caller's value. With value=0 (or missing)
+    that raises ZeroDivisionError.
+
+    Flask would normally turn an unhandled exception into a 500 response and
+    keep serving, so a monitor watching the *container* would never notice.
+    This service is deliberately less forgiving: it logs the traceback the way
+    a real process would and exits, so the container leaves `running` and an
+    agent has something genuine to detect, diagnose and restart.
     """
-    # Simulate some processing
     data = request.args.get('value', '0')
-    
-    # INTENTIONAL BUG: Division by zero if value is '0' or not provided
-    # This will cause the backend to crash with an unhandled exception
-    result = 100 / int(data)
-    
+
+    try:
+        # INTENTIONAL BUG: no validation — value=0 divides by zero.
+        result = 100 / int(data)
+    except Exception:
+        print("FATAL: unhandled exception in /crash — exiting", file=sys.stderr)
+        traceback.print_exc()
+        sys.stdout.flush()
+        sys.stderr.flush()
+        # os._exit skips Flask's error handling and atexit hooks: this process
+        # is gone, exit code 1, and the container with it.
+        os._exit(1)
+
     return jsonify({
         'result': result,
         'message': 'Calculation successful'
@@ -188,4 +203,8 @@ def init_db():
 if __name__ == '__main__':
     print("Starting backend service...")
     init_db()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Debug only when asked (FLASK_DEBUG=1), and never the reloader: it forks a
+    # child and would quietly resurrect the process after /crash exits, which
+    # is exactly the failure this demo exists to show.
+    debug = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(host='0.0.0.0', port=5000, debug=debug, use_reloader=False)

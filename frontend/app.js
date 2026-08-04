@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:5000';
+// Same-origin: the frontend server proxies /api/* to the backend, so this works
+// whatever port the stack is published on.
+const API_BASE = '/api';
 
 // Logging functions
 function log(message, type = 'info') {
