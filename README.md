@@ -4,14 +4,15 @@ This is a demo application with multiple Docker containers showcasing a frontend
 
 ## Architecture
 
-- **Frontend**: Nginx serving a simple web interface
+- **Frontend**: a small Flask server that serves the page and proxies `/api/*` to the backend
 - **Backend**: Flask API with intentional bugs for testing
 - **Database**: PostgreSQL for data persistence
 
 ## Services
 
 ### Frontend (Port 3000)
-A web interface that interacts with the backend API.
+A web interface that interacts with the backend API. It proxies `/api/*` to the
+backend inside the compose network, so the page works on whichever port you publish it.
 
 ### Backend (Port 5000)
 Flask REST API with the following endpoints:
@@ -44,17 +45,24 @@ docker ps
 
 ## Testing the Crash
 
-The `/crash` endpoint contains an intentional bug that will crash the backend:
+The `/crash` endpoint contains an intentional bug — a division by the caller's
+value — and, unlike a stock Flask app, it does not hide it behind a 500: it prints
+the traceback and **exits with code 1**, so the container stops. With this
+compose file (`restart: unless-stopped`) Docker brings it straight back; under the
+Continuum agent's compose (`restart: "no"`) it stays down until the agent restarts it,
+which is the point.
 
 ```bash
-# This will crash the backend (division by zero)
-curl http://localhost:5000/crash?value=0
+# This crashes the backend (division by zero) — the container exits
+curl "http://localhost:5000/crash?value=0"
 
-# This will work normally
-curl http://localhost:5000/crash?value=5
+# This works normally
+curl "http://localhost:5000/crash?value=5"
 ```
 
-You can also trigger the crash from the web interface at http://localhost:3000
+You can also trigger it from the web interface at http://localhost:3000 with the
+**Trigger Crash** button. (Under the Continuum agent's compose the ports are 5001 and
+3001.)
 
 ## Accessing Services
 
@@ -70,7 +78,5 @@ You can also trigger the crash from the web interface at http://localhost:3000
 
 ## Intentional Bugs
 
-1. **Division by Zero** (`/crash` endpoint): When `value=0` or not provided, causes ZeroDivisionError
-2. **SQL Injection** (`/dangerous-query` endpoint): Vulnerable to SQL injection attacks
-
-The application intentionally tries to connect to a non-existent database host (`nonexistent-database-host`) to simulate connection failures. This is useful for testing error handling, monitoring, and logging systems.
+1. **Division by Zero** (`/crash` endpoint): when `value=0` or not provided, a ZeroDivisionError is raised, logged, and the process exits
+2. **SQL Injection** (`/dangerous-query` endpoint): vulnerable to SQL injection attacks
